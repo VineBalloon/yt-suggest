@@ -5,18 +5,21 @@ from requests.exceptions import RequestException
 from contextlib import closing
 from bs4 import BeautifulSoup
 
-    """
-    Example tag of suggestion
-    <a class=" content-link spf-link yt-uix-sessionlink spf-link " data-sessionlink="itct=CC8QpDAYACITCP70zZDJ390CFYxcYAodzwIH2Cj4HTIHYXV0b25hdkiI95em1u2g_u0B" data-visibility-tracking="CC8QpDAYACITCP70zZDJ390CFYxcYAodzwIH2Cj4HUCF04PHrNqE-rsB" href="/watch?v=u_QS0sjg6YU" rel=" spf-prefetch nofollow" title="【OFFICIAL】 NicoNico Music Party 2015 VOCALOID Live">
-    """
+"""
+Example tag of suggestion
+<a class=" content-link spf-link yt-uix-sessionlink spf-link " data-sessionlink="itct=CC8QpDAYACITCP70zZDJ390CFYxcYAodzwIH2Cj4HTIHYXV0b25hdkiI95em1u2g_u0B" data-visibility-tracking="CC8QpDAYACITCP70zZDJ390CFYxcYAodzwIH2Cj4HUCF04PHrNqE-rsB" href="/watch?v=u_QS0sjg6YU" rel=" spf-prefetch nofollow" title="【OFFICIAL】 NicoNico Music Party 2015 VOCALOID Live">
+"""
 
 SUGG_CLASS = " content-link spf-link yt-uix-sessionlink spf-link "
 YT_PREFIX = 'https://www.youtube.com'
 CHAR_LIMIT = 100
 LONG_BOI = '-'*CHAR_LIMIT
 
-class URLError(Exception):
-    """Exception raised for error in URL received
+class Error(Exception):
+    pass
+
+class BadHTMLError(Error):
+    """Exception raised for error in HTML received from URL
 
     Attributes:
         message -- explanation of error
@@ -24,7 +27,6 @@ class URLError(Exception):
 
     def __init__(self, message):
         self.message = message
-        
 
 # Terminal colours
 # https://stackoverflow.com/questions/287871/print-in-terminal-with-colors
@@ -52,11 +54,10 @@ def get_url(url):
             if is_good_response(resp):
                 return resp.content
             else:
-                return None
+                raise BadHTMLError
 
     except RequestException as e:
         log_error('Error during requests to {0} : {1}'.format(url, str(e)))
-        return None
 
 
 def is_good_response(resp):
@@ -80,8 +81,7 @@ def log_error(e):
 #
 # NELOTS
 
-if __name__ == '__main__':
-
+def main():
     # Parse args
     parser = argparse.ArgumentParser(
             description='Get the suggested videos from a youtube url')
@@ -100,12 +100,15 @@ if __name__ == '__main__':
 
     # Check url
     if args.yt_url.startswith(YT_PREFIX) == False:
-        raise URLError('Please use a YouTube URL!')
+        log_error('Please use a YouTube URL!')
 
     #print('Got youtube url: '+args.yt_url)
 
-    # Make soup
-    html = BeautifulSoup(get_url(args.yt_url), 'html.parser')
+    # (try) Make soup
+    try:
+        html = BeautifulSoup(get_url(args.yt_url), 'html.parser')
+    except BadHTMLError as e:
+        log_error(e.message)
 
     # Find classes
     if args.verbose:
@@ -126,3 +129,7 @@ if __name__ == '__main__':
             link = YT_PREFIX+a['href'] if args.prefix else a['href']
 
             print(link)
+
+if __name__ == '__main__':
+    main()
+
