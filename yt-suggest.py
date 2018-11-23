@@ -91,7 +91,7 @@ def main():
             help='url of the youtube page to get')
 
     parser.add_argument('-v', '--verbose', action='store_true',
-            help='Pretty Print the output with YouTube prefix')
+            help='Pretty Print the output with YouTube prefix and title')
 
     parser.add_argument('-p', '--prefix', action='store_true',
             help='Prefix the output with YouTube prefix')
@@ -126,7 +126,10 @@ def main():
 
     else:
         for a in html.find_all('a', class_=SUGG_CLASS):
-            link = YT_PREFIX+a['href'] if args.prefix else a['href']
+            if args.prefix:
+                link = YT_PREFIX+a['href'] 
+            else:
+                link = a['href'].split('=')[1]
 
             print(link)
 
